@@ -49,7 +49,7 @@ class ProbSimplexProjector {
 
     void solve(Matrix& mA) {
         /* init */
-        niter = 1;
+        niter   = 1;
         optCond = 1e+10;
 
         double cL = mTtT.operatorNorm() + tol;
@@ -131,9 +131,9 @@ class CoordDescentSolver {
     CoordDescentSolver(double tol, int itersMax)
         : tol(tol), itersMax(itersMax)
     {}
-    void solve(const Matrix& AAt, Vector& tinit, const Vector& b, bool nneg) {
+    void solve(const Matrix& AAt, Vector& tinit, const Vector& b) {
         tinit = tinit.cwiseMax(0.0).cwiseMin(1.0);
-        solveCoordDescent(AAt, tinit, b, nneg);
+        solveCoordDescent(AAt, tinit, b);
     }
 
  private:
@@ -142,8 +142,7 @@ class CoordDescentSolver {
 
     const Scalar slackEps = 1e-15;
 
-    void solveCoordDescent(const Matrix& AAt, Vector& t, const Vector& b,
-        bool nneg = true) {
+    void solveCoordDescent(const Matrix& AAt, Vector& t, const Vector& b) {
         double optCond = tol + 1.0; int niter = 1;
         int r = AAt.cols();
 
@@ -154,13 +153,7 @@ class CoordDescentSolver {
             for (int i = 0; i < r; ++i) {
                 prod = AAt.col(i).dot(t) - b(i);
                 t(i) -= prod / AAt(i, i);
-
-                // Be careful with ternary and eigen
-                if (nneg) {
-                    t(i) = std::max(0.0, t(i));
-                } else {
-                    t(i) = std::max(-1.0, t(i));
-                }
+                t(i) = std::max(0.0, t(i));
                 t(i) = std::min(1.0, t(i));
                 grad.noalias() += AAt.col(i) * t(i);
             }
@@ -181,7 +174,7 @@ struct SolverSuppOutput {
 template <int DIM = -1>
 void applySolver(const PyIn& Dt, PyIn& Tt0, PyIn& A0,
         double lambda, int itersMax, int innerItersMax, double tol,
-        double tolA, double tolT, SolverSuppOutput& supp, bool nneg) {
+        double tolA, double tolT, SolverSuppOutput& supp) {
     using MatrixDD = Eigen::Matrix<double, DIM, DIM>;
     using MatrixDX = Eigen::Matrix<double, DIM, Dynamic>;
     using Vector   = Eigen::Matrix<double, DIM, 1>;
@@ -211,7 +204,7 @@ void applySolver(const PyIn& Dt, PyIn& Tt0, PyIn& A0,
             Dt, Tt, tolA, innerItersMax);
         probSmplxProjector.solve(A);
 
-        // Optimize G
+        // Optimize T
         MatrixDD AAt = A * A.transpose();
         MatrixDX B = A * Dt - lambda * (onesrm - 2 * Ttprev);
 
@@ -219,7 +212,7 @@ void applySolver(const PyIn& Dt, PyIn& Tt0, PyIn& A0,
         for (int i = 0; i < m; ++i) {
             Vector t = Tt.col(i);
             Vector b = B.col(i);
-            solver.solve(AAt, t, b, nneg);
+            solver.solve(AAt, t, b);
             Tt.col(i) = t;
         }
         ++niter;
@@ -243,56 +236,39 @@ template <int ...> struct DimList {};
 /* border case */
 void solve(int d, const PyIn& mDt, PyIn& mTtinit, PyIn& mAinit,
         double lambda, int itersMax, int innerItersMax, double tol, double tolA,
-        double tolT, SolverSuppOutput& supp, bool nneg, DimList<>) {
+        double tolT, SolverSuppOutput& supp, DimList<>) {
 }
 
 template <int DIM, int ...DIMS>
 void solve(int d, const PyIn& mDt, PyIn& mTtinit, PyIn& mAinit,
         double lambda, int itersMax, int innerItersMax, double tol, double tolA,
-        double tolT, SolverSuppOutput& supp, bool nneg, DimList<DIM, DIMS...>) {
+        double tolT, SolverSuppOutput& supp, DimList<DIM, DIMS...>) {
     if (DIM != d) {
         return solve(d, mDt, mTtinit, mAinit, lambda,
                 itersMax, innerItersMax, tol, tolA, tolT,
-                supp, nneg,
+                supp,
                 DimList<DIMS...>());
     }
 
     applySolver<DIM>(mDt, mTtinit, mAinit, lambda,
             itersMax, innerItersMax, tol, tolA, tolT,
-            supp, nneg);
+            supp);
 }
 
 template <int ...DIMS>
 void solve(int d, const PyIn& mDt, PyIn& mTtinit, PyIn& mAinit,
         double lambda, int itersMax, int innerItersMax, double tol, double tolA,
-        double tolT, SolverSuppOutput& supp, bool nneg) {
+        double tolT, SolverSuppOutput& supp) {
         solve(d, mDt, mTtinit, mAinit, lambda,
                 itersMax, innerItersMax, tol, tolA, tolT,
-                supp, nneg,
+                supp,
                 DimList<DIMS...>());
 }
-
-
-// SolverSuppOutput GAFact(
-//     PyIn D, PyIn E, PyIn G0, PyIn A0, PyIn G_mask, PyIn A_mask,
-//     double lmbda, int itersMax, int innerItersMax,
-//     double tol, double tolA, double tolT, bool nneg){
-
-//     Eigen::initParallel();
-//     Eigen::setNbThreads(1);
-//     SolverSuppOutput supp;
-
-//     applySolver<Dynamic>(
-//         D, E, G0, A0, G_mask, A_mask,
-//         lmbda, itersMax, innerItersMax, tol,
-//         tolA, tolT, supp, nneg);
-//     return supp;
-// }
 
 SolverSuppOutput TAFact(
     PyIn D, PyIn Tt0, PyIn A0,
     double lmbda, int itersMax, int innerItersMax,
-    double tol, double tolA, double tolT, bool nneg){
+    double tol, double tolA, double tolT){
 
     Eigen::initParallel();
     Eigen::setNbThreads(1);
@@ -301,7 +277,7 @@ SolverSuppOutput TAFact(
     solve<Dynamic>(
         Dynamic, D, Tt0, A0,
         lmbda, itersMax, innerItersMax, tol,
-        tolA, tolT, supp, nneg);
+        tolA, tolT, supp);
     return supp;
 }
 

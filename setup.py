@@ -34,6 +34,7 @@ setup(
     ext_modules=ext_modules,
     cmdclass={"build_ext": build_ext},
     zip_safe=False,
+    install_requires=["scikit-learn", "numpy", "pybind11"],
     python_requires=">=3.6",
     include_package_data=True,
     package_data={'': ['data/*.npz']},

@@ -18,6 +18,5 @@ PYBIND11_MODULE(extensions, m) {
         py::arg("D"), py::arg("Tt0"), py::arg("A0"),
         py::arg("lmbda")            = 0.0,  py::arg("itersMax") = 500,
         py::arg("innerItersMax")    = 500,  py::arg("tol")      = 1e-8,
-        py::arg("tolA")             = 1e-7, py::arg("tolT")     = 1e-7,
-        py::arg("nneg")             = true);
+        py::arg("tolA")             = 1e-7, py::arg("tolT")     = 1e-7);
 }

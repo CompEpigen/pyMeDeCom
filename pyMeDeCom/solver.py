@@ -163,6 +163,7 @@ class Base_Solver:
         self._free_sharedarr(self._T)
         self._free_sharedarr(self._A)
 
+        # RMSE definition used in MeDeCom
         rmse = np.linalg.norm(0.5 * (D - T @ A)) ** 2
         rmse /= (D.shape[0] * D.shape[1])
 
@@ -200,6 +201,6 @@ class MeDeCom(Base_Solver):
             rmse = TAFact(
                 D = Dt, Tt0 = Tt , A0 = A,
                 lmbda = 0.0, itersMax = niter, innerItersMax = niter,
-                tol = 1e-8, tolT = 1e-7, tolA = 1e-7, nneg = True
-                )
+                tol = 1e-8, tolT = 1e-7, tolA = 1e-7
+            )
             self._update_matrices(Tt.T, A, rmse.rmse)

@@ -9,10 +9,11 @@
 
 from pyMeDeCom import MeDeCom
 import numpy as np
+from os.path import join, dirname
 
 if __name__ == "__main__":
     solver = MeDeCom()
-    D = np.load("/Users/vale/src/pyMeDeCom/tests/D.npy")
-    T, A, RMSE = solver.run_parallel(D = D, k = 5, ninit = 10, niter = 1000, ncores = 8,
-        progress = True)
-    print(RMSE)
+    D = np.load(join(dirname(__file__), "D.npy"))
+    T, A, RMSE = solver.run_parallel(D = D, k = 5, ninit = 10, niter = 100,
+        ncores = 8, progress = True)
+    print(f"RMSE: {round(RMSE, 5)}")
