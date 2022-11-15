@@ -3,7 +3,7 @@
 
 namespace py = pybind11;
 
-#include "gafact.cpp"
+#include "factorize.cpp"
 
 PYBIND11_MODULE(extensions, m) {
     py::class_<SolverSuppOutput>(m, "SolverSuppOutput")

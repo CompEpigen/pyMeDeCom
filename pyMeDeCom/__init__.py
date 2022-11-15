@@ -1,1 +1,1 @@
-from .solver import *
+from .solver import MeDeCom
