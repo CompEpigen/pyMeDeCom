@@ -171,12 +171,12 @@ class Base_Solver:
 
 class MeDeCom(Base_Solver):
 
-    def __init__(self, lmbd = 0):
+    def __init__(self, lmbda = 0):
         super().__init__()
         self.tol  = 1e-8
         self.tolA = 1e-7
         self.tolT = self.tolA
-        self.lmbd = lmbd
+        self.lmbda = lmbda
         self.arr_order = "F"
 
     @staticmethod
@@ -200,7 +200,7 @@ class MeDeCom(Base_Solver):
             Tt, A = self._initialize(D = D, k = k, rng = rng)
             rmse = TAFact(
                 D = Dt, Tt0 = Tt , A0 = A,
-                lmbda = 0.0, itersMax = niter, innerItersMax = niter,
+                lmbda = self.lmbda, itersMax = niter, innerItersMax = niter,
                 tol = 1e-8, tolT = 1e-7, tolA = 1e-7
             )
             self._update_matrices(Tt.T, A, rmse.rmse)
