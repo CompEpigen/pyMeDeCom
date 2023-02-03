@@ -8,23 +8,22 @@ from setuptools import setup
 __version__ = "0.0.1"
 
 if platform.processor() == "arm" or platform.processor() == "i386":
-    extra_args = ['-O3', '-ftree-vectorize']
+    extra_args = ["-O3", "-ftree-vectorize"]
 else:
-    extra_args = ['-O3', '-march=native', '-mfpmath=sse']
+    extra_args = ["-O3", "-march=native", "-mfpmath=sse"]
 
 ext_modules = [
-    Pybind11Extension("pyMeDeCom.extensions",
-        [
-            "src/pybindings.cpp"
-        ],
-        define_macros = [('VERSION_INFO', __version__)],
-        extra_compile_args = extra_args
-        ),
+    Pybind11Extension(
+        "pyMeDeCom.extensions",
+        ["src/pybindings.cpp"],
+        define_macros=[("VERSION_INFO", __version__)],
+        extra_compile_args=extra_args,
+    ),
 ]
 
 setup(
     name="pyMeDeCom",
-    packages=['pyMeDeCom'],
+    packages=["pyMeDeCom"],
     version=__version__,
     author="Valentin Maurer",
     author_email="valentin.maurer@stud.uni-heidelberg.de",
@@ -37,5 +36,5 @@ setup(
     install_requires=["scikit-learn", "numpy", "pybind11"],
     python_requires=">=3.6",
     include_package_data=True,
-    package_data={'': ['data/*.npz']},
+    package_data={"": ["data/*.npz"]},
 )
