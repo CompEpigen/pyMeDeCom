@@ -1,6 +1,8 @@
-from pyMeDeCom import MeDeCom
-import numpy as np
 from os.path import join, dirname
+
+import numpy as np
+
+from pyMeDeCom import MeDeCom
 
 if __name__ == "__main__":
     solver = MeDeCom(lmbda=0.1)
