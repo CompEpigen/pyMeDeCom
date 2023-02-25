@@ -58,19 +58,19 @@ def parse_args():
     ),
     parser.add_argument(
         "-l",
-        dest="lmbda",
+        dest="lambdas",
         required=False,
         default=0.01,
-        type=float,
-        help="Lambda used for fitting.",
+        type=str,
+        help="Comma separated sequence of lambdas, e.g. '0.1,1,10'",
     ),
     parser.add_argument(
         "-k",
         dest="components",
         required=False,
-        default=5,
-        type=int,
-        help="Number of components used for fitting.",
+        default="5",
+        type=str,
+        help="Comma separated sequence of ks, e.g. '1,2,3'",
     ),
     parser.add_argument(
         "-n",
@@ -98,6 +98,13 @@ def parse_args():
     )
     args = parser.parse_args()
 
+    args.components = [int(element) for element in args.components]
+    args.lambdas = [int(element) for element in args.lambdas]
+
+    if len(args.components) > 1:
+        raise NotImplementedError("Currently only one value for k is supported.")
+    if len(args.lambdas) > 1:
+        raise NotImplementedError("Currently only one value for lambda is supported.")
     return args
 
 
