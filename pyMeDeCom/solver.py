@@ -8,6 +8,7 @@
 
 import random
 import sys
+import traceback
 from copy import deepcopy
 
 import numpy as np
@@ -96,7 +97,20 @@ class Base_Solver:
     def _handle_traceback(last_type, last_value, last_traceback):
         if last_type is None:
             return None
+        traceback.print_tb(last_traceback)
         raise last_type(last_value)
+
+    def clean_shared_memory(self):
+        for attribute in self.__dict__:
+            class_attribute = getattr(self, attribute)
+            if class_attribute.__class__ is not shared_memory.SharedMemory:
+                continue
+            try:
+                self._free_sharedarr(class_attribute)
+                setattr(self, attribute, None)
+            # Shared memory has been freed already
+            except FileNotFoundError:
+                continue
 
     def _shared_memory_handler(func):
         def inner_function(self, *args, **kwargs):
@@ -107,15 +121,7 @@ class Base_Solver:
                 last_type, last_value, last_traceback = sys.exc_info()
             # Free shared memory
             finally:
-                for attribute in self.__dict__:
-                    class_attribute = getattr(self, attribute)
-                    if class_attribute.__class__ is not shared_memory.SharedMemory:
-                        continue
-                    try:
-                        self._free_sharedarr(class_attribute)
-                    # Shared memory has been freed already
-                    except FileNotFoundError:
-                        continue
+                self.clean_shared_memory()
                 self._handle_traceback(last_type, last_value, last_traceback)
 
         return inner_function
