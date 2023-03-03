@@ -2,6 +2,7 @@
 
 import argparse
 
+import pickle
 import numpy as np
 
 from pyMeDeCom import MeDeCom
