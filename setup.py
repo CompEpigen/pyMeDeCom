@@ -30,6 +30,9 @@ setup(
     url="https://github.com/CompEpigen/pyMeDeCom",
     description="Decomposition of methylome data",
     long_description="Python implementation of https://github.com/lutsik/MeDeCom.",
+    scripts=[
+        "scripts/run_pymedecom.py",
+    ],
     ext_modules=ext_modules,
     cmdclass={"build_ext": build_ext},
     zip_safe=False,

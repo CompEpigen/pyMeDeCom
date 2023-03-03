@@ -49,7 +49,7 @@ def parse_args():
         help="Path to write fitted A matrix to.",
     )
     parser.add_argument(
-        "-n",
+        "-c",
         dest="cores",
         required=False,
         default=4,
@@ -60,7 +60,7 @@ def parse_args():
         "-l",
         dest="lambdas",
         required=False,
-        default=0.01,
+        default="0.01",
         type=str,
         help="Comma separated sequence of lambdas, e.g. '0.1,1,10'",
     ),
@@ -98,8 +98,8 @@ def parse_args():
     )
     args = parser.parse_args()
 
-    args.components = [int(element) for element in args.components]
-    args.lambdas = [int(element) for element in args.lambdas]
+    args.components = [int(element) for element in args.components.split(",")]
+    args.lambdas = [float(element) for element in args.lambdas.split(",")]
 
     if len(args.components) > 1:
         raise NotImplementedError("Currently only one value for k is supported.")
@@ -123,9 +123,12 @@ if __name__ == "__main__":
     A = load_matrix(args.proportion, delimiter=args.delimiter)
 
     D = T @ A
-    components = A.shape[0]
 
-    solver = MeDeCom(lmbda=args.lmbda)
+    # For now only using first elements
+    args.components = args.components[0]
+    args.lambdas = args.lambdas[0]
+
+    solver = MeDeCom(lmbda=args.lambdas)
     T, A, RMSE = solver.run_parallel(
         D=D,
         k=args.components,
