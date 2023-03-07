@@ -1,7 +1,8 @@
-#!python3
+#python3
 
 import argparse
 
+import pickle
 import numpy as np
 
 from pyMeDeCom import MeDeCom
@@ -34,6 +35,15 @@ def parse_args():
         required=True,
         help="Path to ground truth A matrix.",
     )
+
+    #parser.add_argument(
+    #    "-out",
+    #    dest="out",
+    #    type=str,
+    #    required=True,
+    #    help="Path to write dictionary to.",
+    #),
+
     parser.add_argument(
         "-tout",
         dest="exposure_out",
@@ -49,7 +59,7 @@ def parse_args():
         help="Path to write fitted A matrix to.",
     )
     parser.add_argument(
-        "-c",
+        "-n",
         dest="cores",
         required=False,
         default=4,
@@ -60,7 +70,7 @@ def parse_args():
         "-l",
         dest="lambdas",
         required=False,
-        default="0.01",
+        default=0.01,
         type=str,
         help="Comma separated sequence of lambdas, e.g. '0.1,1,10'",
     ),
@@ -98,13 +108,13 @@ def parse_args():
     )
     args = parser.parse_args()
 
-    args.components = [int(element) for element in args.components.split(",")]
-    args.lambdas = [float(element) for element in args.lambdas.split(",")]
+    args.components = [int(element) for element in args.components]
+    args.lambdas = [int(element) for element in args.lambdas]
 
-    if len(args.components) > 1:
-        raise NotImplementedError("Currently only one value for k is supported.")
-    if len(args.lambdas) > 1:
-        raise NotImplementedError("Currently only one value for lambda is supported.")
+    #if len(args.components) > 1:
+        #raise NotImplementedError("Currently only one value for k is supported.")
+    #if len(args.lambdas) > 1:
+        #raise NotImplementedError("Currently only one value for lambda is supported.")
     return args
 
 
@@ -115,6 +125,16 @@ def load_matrix(
         return np.load(filename).astype(default_dtype)
     return np.loadtxt(filename, delimiter=delimiter, dtype=default_dtype)
 
+def save_pickle(path_save: str, data: dict) -> None :
+    if ".pickle" not in path_save:
+        path_save = path_save + ".pickle"
+    with open(path_save, 'wb') as handle:
+        pickle.dump(data, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+def load_pickle(filename: str) -> dict:
+    with open(filename, 'rb') as handle:
+        dictionary = pickle.load(handle)
+    return dictionary
 
 if __name__ == "__main__":
     args = parse_args()
@@ -123,20 +143,39 @@ if __name__ == "__main__":
     A = load_matrix(args.proportion, delimiter=args.delimiter)
 
     D = T @ A
+    components = A.shape[0]
+    dictionary = {}
+    for k in args.components :
+        for lmbda in args.lambdas :
+            print("for k=", k, " and lambda=", l, " : ")
 
-    # For now only using first elements
-    args.components = args.components[0]
-    args.lambdas = args.lambdas[0]
+            solver = MeDeCom(lmbda=lmbda)
+            T, A, RMSE = solver.run_parallel(
+                D=D,
+                k=k,
+                ninit=args.ninit,
+                niter=args.niter,
+                ncores=args.cores,
+                progress=True,
+            )
+            print(f"RMSE: {round(RMSE, 5)}")
+            
+            file_name = "k"+str(k)+"_l"+str_l
+            dictionary[file_name] = (T, A, RMSE)
 
-    solver = MeDeCom(lmbda=args.lambdas)
-    T, A, RMSE = solver.run_parallel(
-        D=D,
-        k=args.components,
-        ninit=args.ninit,
-        niter=args.niter,
-        ncores=args.cores,
-        progress=True,
-    )
+    # Save dictionary to pickle which needs common path
+    #save_pickle(args.out, dictionary)
 
+    # Save based on top hit RMSE        
+    min_rmse = 1000
+    name_min = ''
+    for key, item in dictionary.items():
+        if item[2] < min_rmse :
+            min_rmse = item[2]
+            name_min = key
+    print("Min RMSE ", min_rmse, " for ", name_min)
+    T = (dictionary[name_min])[0]
+    A = (dictionary[name_min])[1]
+    
     np.savetxt(args.exposure_out, T, delimiter=args.delimiter)
     np.savetxt(args.proportion_out, A, delimiter=args.delimiter)
