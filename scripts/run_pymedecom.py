@@ -1,12 +1,12 @@
 #python3
 
 import argparse
-
 import pickle
+from itertools import product
+
 import numpy as np
 
 from pyMeDeCom import MeDeCom
-
 
 # https://stackoverflow.com/questions/14117415/in-python-using-argparse-allow-only-positive-integers
 def check_positive(value):
@@ -35,15 +35,6 @@ def parse_args():
         required=True,
         help="Path to ground truth A matrix.",
     )
-
-    #parser.add_argument(
-    #    "-out",
-    #    dest="out",
-    #    type=str,
-    #    required=True,
-    #    help="Path to write dictionary to.",
-    #),
-
     parser.add_argument(
         "-tout",
         dest="exposure_out",
@@ -59,6 +50,14 @@ def parse_args():
         help="Path to write fitted A matrix to.",
     )
     parser.add_argument(
+       "-out",
+       dest="outpath",
+       type=str,
+       required=False,
+       default = None,
+       help="Path to write dictionary to.",
+    ),
+    parser.add_argument(
         "-n",
         dest="cores",
         required=False,
@@ -70,7 +69,7 @@ def parse_args():
         "-l",
         dest="lambdas",
         required=False,
-        default=0.01,
+        default="0.01",
         type=str,
         help="Comma separated sequence of lambdas, e.g. '0.1,1,10'",
     ),
@@ -108,13 +107,9 @@ def parse_args():
     )
     args = parser.parse_args()
 
-    args.components = [int(element) for element in args.components]
-    args.lambdas = [int(element) for element in args.lambdas]
+    args.components = [int(element) for element in args.components.split(',')]
+    args.lambdas = [float(element) for element in args.lambdas.split(',')]
 
-    #if len(args.components) > 1:
-        #raise NotImplementedError("Currently only one value for k is supported.")
-    #if len(args.lambdas) > 1:
-        #raise NotImplementedError("Currently only one value for lambda is supported.")
     return args
 
 
@@ -145,28 +140,24 @@ if __name__ == "__main__":
     D = T @ A
     components = A.shape[0]
     dictionary = {}
-    for k in args.components :
-        for lmbda in args.lambdas :
-            print("for k=", k, " and lambda=", l, " : ")
+    for k, lmbda in product(args.components, args.lambdas)
+        solver = MeDeCom(lmbda=lmbda)
+        T, A, RMSE = solver.run_parallel(
+            D=D,
+            k=k,
+            ninit=args.ninit,
+            niter=args.niter,
+            ncores=args.cores,
+            progress=True,
+        )
+        print(f"RMSE: {round(RMSE, 5)} [k={k} lambda={lmbda}]")
+        file_name = f"k{k}_l{lmbda}"
+        dictionary[file_name] = (T, A, RMSE)
 
-            solver = MeDeCom(lmbda=lmbda)
-            T, A, RMSE = solver.run_parallel(
-                D=D,
-                k=k,
-                ninit=args.ninit,
-                niter=args.niter,
-                ncores=args.cores,
-                progress=True,
-            )
-            print(f"RMSE: {round(RMSE, 5)}")
-            
-            file_name = "k"+str(k)+"_l"+str_l
-            dictionary[file_name] = (T, A, RMSE)
+    if args.outpath is not None:
+        save_pickle(args.outpath, dictionary)
 
-    # Save dictionary to pickle which needs common path
-    #save_pickle(args.out, dictionary)
-
-    # Save based on top hit RMSE        
+    # Save based on top hit RMSE
     min_rmse = 1000
     name_min = ''
     for key, item in dictionary.items():
