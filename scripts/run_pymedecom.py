@@ -1,4 +1,4 @@
-#python3
+#!python3
 
 import argparse
 import pickle
@@ -58,7 +58,7 @@ def parse_args():
        help="Path to write dictionary to.",
     ),
     parser.add_argument(
-        "-n",
+        "-c",
         dest="cores",
         required=False,
         default=4,
@@ -140,7 +140,7 @@ if __name__ == "__main__":
     D = T @ A
     components = A.shape[0]
     dictionary = {}
-    for k, lmbda in product(args.components, args.lambdas)
+    for k, lmbda in product(args.components, args.lambdas):
         solver = MeDeCom(lmbda=lmbda)
         T, A, RMSE = solver.run_parallel(
             D=D,
